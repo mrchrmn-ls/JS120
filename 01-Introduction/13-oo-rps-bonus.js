@@ -1,5 +1,12 @@
+const rlsync = require('readline-sync');
+
 const WINNING_SCORE = 5;
 
+const MINIMUM_MOVES = 6;
+// minimum number of moves to collect in history before using them
+
+const RECENCY_BIAS = 12;
+// this many recent moves are considered
 
 const WEAPONS = {
   r: {
@@ -16,12 +23,8 @@ const WEAPONS = {
   }
 };
 
-
 let weaponNames = Object.values(WEAPONS)
                         .map(weapon => weapon.name);
-
-
-const rlsync = require('readline-sync');
 
 
 const Help = {
@@ -88,7 +91,7 @@ const Create = {
 
     let computerObject = {
       name: "Computer",
-      recencyBias: 10,
+      recencyBias: RECENCY_BIAS,
       // how many previous human moves to take into account
 
       choose(game) {
@@ -109,7 +112,7 @@ const Create = {
           this.choice = humanChoices[length - 1];
           // three in a row are statistically unlikely
 
-        } else if (length < 6) {
+        } else if (length < MINIMUM_MOVES) {
           this.choice = Help.getRnd(Object.keys(WEAPONS));
           // random choice until enough moves in history
 
