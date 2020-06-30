@@ -1,22 +1,5 @@
 const WINNING_SCORE = 5;
 
-/* eslint-disable id-length*/
-const WEAPONS = {
-  r: {
-    name: "Rock",
-    beats: ["s"]
-  },
-  p: {
-    name: "Paper",
-    beats: ["r"]
-  },
-  s: {
-    name: "Scissors",
-    beats: ["p"]
-  }
-};
-
-/*
 const WEAPONS = {
   r: {
     name: "Rock",
@@ -39,9 +22,6 @@ const WEAPONS = {
     beats: ["r", "ss"]
   }
 };
-*/
-
-/* eslint-enable id-length*/
 
 let weaponNames = Object.values(WEAPONS)
                         .map(weapon => weapon.name);
@@ -103,7 +83,6 @@ const Display = {
     console.log();
     console.log(`Choose one of ${Help.joinOr(weaponNames).toLowerCase()}`);
     console.log(`by entering ${Help.joinOr(Object.keys(WEAPONS))}.`);
-    console.log("Enter 'h' for history of moves.");
   },
 
   scores(game) {
@@ -121,13 +100,12 @@ const Display = {
     console.log();
 
     if (!game.roundWinner) {
-      console.log("It's a tie.");
-      console.log();
+      console.log("It's a tie.\n");
       return;
     }
 
     switch (game.roundWinner.name) {
-      case "you":
+      case "human":
         console.log(`${WEAPONS[game.human.choice].name} beats ${WEAPONS[game.computer.choice].name}!`);
         console.log("You win this round.");
         break;
@@ -140,7 +118,7 @@ const Display = {
   matchWinner(winner) {
     console.log();
     switch (winner.name) {
-      case "you":
+      case "human":
         console.log("CONGRATULATIONS! You have won this match.");
         break;
       case "computer":
@@ -150,17 +128,6 @@ const Display = {
 
   goodbyeMessage() {
     console.log("Thank you for playing Rock, Paper, Scissors. Goodbye!");
-  },
-
-  history(game) {
-    let history = game.history;
-    console.log();
-    console.log("YOU      | COMPUTER | WINNER");
-    for (let index = history.winners.length - 1; index >= 0; index -= 1) {
-      console.log(`${WEAPONS[history.humanChoices[index]].name.padEnd(8)} | ` +
-                  `${WEAPONS[history.computerChoices[index]].name.padEnd(8)} | ` +
-                  `${history.winners[index]}`);
-    }
   }
 };
 
@@ -188,30 +155,18 @@ const Create = {
     let computerObject = {
       name: "computer",
 
-      choose(game) {
-        let humanChoices = game.history.humanChoices;
+      choose(history) {
+        let likelyHumanChoice;
 
-        if (humanChoices.length === 0) {
+        if (history.choices.length === 0) {
           this.choice = Help.getRnd(["p", "p", "p", "r", "s"]);
-          // bias towards paper for first move
-
-        } else if (humanChoices.length === 1) {
+        } else if (history.choices.length === 1) {
           this.choice = Help.getRnd(Object.keys(WEAPONS));
-          // random choice for second move
-
-        } else if (humanChoices[0] === humanChoices[1] &&
-                   humanChoices[0] !== humanChoices[2]) {
-          this.choice = history.humanChoices[0];
-          // three in a row are statistically unlikely
-
-        } else if (humanChoices.length < 6) {
-          this.choice = Help.getRnd(Object.keys(WEAPONS));
-          // random choice until enough moves in history
-
+        } else if (history.choices[0] === history.choices[1]) {
+          this.choice = history.choices[0];
         } else {
-          let likelyHumanChoice = Help.getRnd(humanChoices);
+          likelyHumanChoice = Help.getRnd(history.choices);
           this.choice = Help.getRnd(Help.weaponsThatBeat(likelyHumanChoice));
-          // computer favours weapons that beat human's more common choice.
         }
       }
     };
@@ -222,20 +177,12 @@ const Create = {
     let playerObject = this.player();
 
     let humanObject = {
-      name: "you",
+      name: "human",
 
-      choose(game) {
+      choose() {
         Display.promptToChoose();
 
-        let choice = Help.getValidAnswer(Object.keys(WEAPONS).concat("h"));
-
-        if (choice === "h") {
-          Display.history(game);
-          this.choose();
-        } else {
-          this.choice = choice;
-        }
-
+        this.choice = Help.getValidAnswer(Object.keys(WEAPONS));
       }
     };
     return Object.assign(playerObject, humanObject);
@@ -243,14 +190,10 @@ const Create = {
 
   history() {
     return {
-      humanChoices: [],
-      computerChoices: [],
-      winners: [],
+      choices: [],
 
-      update(humanChoice, computerChoice, winner) {
-        this.humanChoices.unshift(humanChoice);
-        this.computerChoices.unshift(computerChoice);
-        this.winners.unshift(winner ? winner.name : "");
+      update(choice) {
+        this.choices.unshift(choice);
       }
     };
   }
@@ -306,17 +249,16 @@ const RPSGame = {
 
         Display.scores(this);
 
-        this.human.choose(this);
-        this.computer.choose(this);
+        this.human.choose();
+        this.computer.choose(this.history);
+        console.log(this.computer.choice);
         Display.choices(this);
 
         this.setRoundWinner();
         Display.roundWinner(this);
 
         if (this.roundWinner) this.roundWinner.incrementScore();
-        this.history.update(this.human.choice,
-                            this.computer.choice,
-                            this.roundWinner);
+        this.history.update(this.human.choice);
       }
 
       Display.scores(this);
