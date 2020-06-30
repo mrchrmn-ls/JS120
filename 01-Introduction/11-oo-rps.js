@@ -11,7 +11,7 @@ function getRnd(array) {
 function createPlayer() {
   return {
     move: null
-  }
+  };
 }
 
 
@@ -22,7 +22,7 @@ function createComputer() {
     choose() {
       this.move = getRnd(choices);
     }
-  }
+  };
 
   return Object.assign(playerObject, computerObject);
 }
