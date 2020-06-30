@@ -1,6 +1,6 @@
 const WINNING_SCORE = 5;
 
-/* eslint-disable id-length*/
+
 const WEAPONS = {
   r: {
     name: "Rock",
@@ -16,32 +16,6 @@ const WEAPONS = {
   }
 };
 
-/*
-const WEAPONS = {
-  r: {
-    name: "Rock",
-    beats: ["ss", "l"]
-  },
-  p: {
-    name: "Paper",
-    beats: ["r", "s"]
-  },
-  ss: {
-    name: "Scissors",
-    beats: ["p", "l"]
-  },
-  l: {
-    name: "Lizard",
-    beats: ["s", "p"]
-  },
-  s: {
-    name: "Spock",
-    beats: ["r", "ss"]
-  }
-};
-*/
-
-/* eslint-enable id-length*/
 
 let weaponNames = Object.values(WEAPONS)
                         .map(weapon => weapon.name);
@@ -92,79 +66,6 @@ const Help = {
 };
 
 
-const Display = {
-  welcomeMessage() {
-    console.clear();
-    console.log(`Welcome to ${Help.joinOr(weaponNames, ", ", "")}!`);
-    console.log(`The first to win ${WINNING_SCORE} rounds wins the match!`);
-  },
-
-  promptToChoose() {
-    console.log();
-    console.log(`Choose one of ${Help.joinOr(weaponNames).toLowerCase()}`);
-    console.log(`by entering ${Help.joinOr(Object.keys(WEAPONS))}.`);
-    console.log("Enter 'h' for history of moves.");
-  },
-
-  scores(game) {
-    console.log();
-    console.log(`>>> PLAYER   ${game.human.score} : ${game.computer.score}   COMPUTER <<<`);
-  },
-
-  choices(game) {
-    console.clear();
-    console.log(`You chose: ${WEAPONS[game.human.choice].name}`);
-    console.log(`Computer chose: ${WEAPONS[game.computer.choice].name}`);
-  },
-
-  roundWinner(game) {
-    console.log();
-
-    if (!game.roundWinner) {
-      console.log("It's a tie.");
-      console.log();
-      return;
-    }
-
-    switch (game.roundWinner.name) {
-      case "you":
-        console.log(`${WEAPONS[game.human.choice].name} beats ${WEAPONS[game.computer.choice].name}!`);
-        console.log("You win this round.");
-        break;
-      case "computer":
-        console.log(`${WEAPONS[game.computer.choice].name} beats ${WEAPONS[game.human.choice].name}!`);
-        console.log("The computer wins this round.");
-    }
-  },
-
-  matchWinner(winner) {
-    console.log();
-    switch (winner.name) {
-      case "you":
-        console.log("CONGRATULATIONS! You have won this match.");
-        break;
-      case "computer":
-        console.log("Sorry, the computer has won this match.");
-    }
-  },
-
-  goodbyeMessage() {
-    console.log("Thank you for playing Rock, Paper, Scissors. Goodbye!");
-  },
-
-  history(game) {
-    let history = game.history;
-    console.log();
-    console.log("YOU      | COMPUTER | WINNER");
-    for (let index = history.winners.length - 1; index >= 0; index -= 1) {
-      console.log(`${WEAPONS[history.humanChoices[index]].name.padEnd(8)} | ` +
-                  `${WEAPONS[history.computerChoices[index]].name.padEnd(8)} | ` +
-                  `${history.winners[index]}`);
-    }
-  }
-};
-
-
 const Create = {
   player() {
     return {
@@ -186,30 +87,36 @@ const Create = {
     let playerObject = this.player();
 
     let computerObject = {
-      name: "computer",
+      name: "Computer",
+      recencyBias: 10,
+      // how many previous human moves to take into account
 
       choose(game) {
         let humanChoices = game.history.humanChoices;
+        let length = humanChoices.length;
+        let rounds = game.history.rounds;
 
-        if (humanChoices.length === 0) {
+        if (rounds[rounds.length - 1] === 0) {
           this.choice = Help.getRnd(["p", "p", "p", "r", "s"]);
           // bias towards paper for first move
 
-        } else if (humanChoices.length === 1) {
+        } else if (length === 1) {
           this.choice = Help.getRnd(Object.keys(WEAPONS));
           // random choice for second move
 
-        } else if (humanChoices[0] === humanChoices[1] &&
-                   humanChoices[0] !== humanChoices[2]) {
-          this.choice = history.humanChoices[0];
+        } else if (humanChoices[length - 1] === humanChoices[length - 2] &&
+                   humanChoices[length - 1] !== humanChoices[length - 3]) {
+          this.choice = humanChoices[length - 1];
           // three in a row are statistically unlikely
 
-        } else if (humanChoices.length < 6) {
+        } else if (length < 6) {
           this.choice = Help.getRnd(Object.keys(WEAPONS));
           // random choice until enough moves in history
 
         } else {
-          let likelyHumanChoice = Help.getRnd(humanChoices);
+          let likelyHumanChoice = length < this.recencyBias ?
+                                  Help.getRnd(humanChoices) :
+                                  Help.getRnd(humanChoices.slice(length - this.recencyBias));
           this.choice = Help.getRnd(Help.weaponsThatBeat(likelyHumanChoice));
           // computer favours weapons that beat human's more common choice.
         }
@@ -222,35 +129,63 @@ const Create = {
     let playerObject = this.player();
 
     let humanObject = {
-      name: "you",
+      name: "You",
 
-      choose(game) {
-        Display.promptToChoose();
+      choose() {
+        console.log(`Choose one of ${Help.joinOr(weaponNames).toLowerCase()}`);
+        console.log(`by entering ${Help.joinOr(Object.keys(WEAPONS))}.`);
 
-        let choice = Help.getValidAnswer(Object.keys(WEAPONS).concat("h"));
-
-        if (choice === "h") {
-          Display.history(game);
-          this.choose();
-        } else {
-          this.choice = choice;
-        }
-
+        this.choice = Help.getValidAnswer(Object.keys(WEAPONS));
       }
     };
     return Object.assign(playerObject, humanObject);
   },
 
+// eslint-disable-next-line max-lines-per-function, max-statements
   history() {
     return {
       humanChoices: [],
       computerChoices: [],
       winners: [],
+      rounds: [0],
 
-      update(humanChoice, computerChoice, winner) {
-        this.humanChoices.unshift(humanChoice);
-        this.computerChoices.unshift(computerChoice);
-        this.winners.unshift(winner ? winner.name : "");
+      updateRound(game) {
+        this.humanChoices.push(game.human.choice);
+        this.computerChoices.push(game.computer.choice);
+        this.winners.push(game.roundWinner ? game.roundWinner.name : "Tie");
+        this.rounds[this.rounds.length - 1] += 1;
+      },
+
+      updateMatch() {
+        this.rounds.push(0);
+      },
+
+// eslint-disable-next-line max-lines-per-function, max-statements
+      display() {
+        let counter = 0;
+        console.clear();
+        console.log("\nMatch 1");
+        console.log("YOU      | COMPUTER | WINNER");
+        console.log("---------+----------+---------");
+        for (let match = 0; match < this.rounds.length - 1; match += 1) {
+          for (let round = 0; round < this.rounds[match]; round += 1) {
+            console.log(`${WEAPONS[this.humanChoices[counter]].name.padEnd(8)} | ` +
+            `${WEAPONS[this.computerChoices[counter]].name.padEnd(8)} | ` +
+            `${this.winners[counter]}`);
+            counter += 1;
+          }
+
+          console.log(`\nMatch ${2 + match}`);
+          console.log("---------+----------+---------");
+        }
+
+        for (let round = 0; round < this.rounds[this.rounds.length - 1]; round += 1) {
+          console.log(`${WEAPONS[this.humanChoices[counter]].name.padEnd(8)} | ` +
+                      `${WEAPONS[this.computerChoices[counter]].name.padEnd(8)} | ` +
+                      `${this.winners[counter]}`);
+          counter += 1;
+        }
+        console.log();
       }
     };
   }
@@ -264,23 +199,54 @@ const RPSGame = {
   roundWinner: null,
   matchWinner: null,
 
+  displayWelcomeMessage() {
+    console.clear();
+    console.log(`Welcome to ${Help.joinOr(weaponNames, ", ", "")}!`);
+    console.log(`The first to win ${WINNING_SCORE} rounds wins the match!\n`);
+  },
+
+  displayScores() {
+    console.log(`>>> YOU   ${this.human.score} : ${this.computer.score}   COMPUTER <<<\n`);
+  },
+
+  displayChoices() {
+    console.clear();
+    console.log(`You chose: ${WEAPONS[this.human.choice].name}`);
+    console.log(`Computer chose: ${WEAPONS[this.computer.choice].name}\n`);
+  },
+
+  displayMatchWinner() {
+    console.log("=========================================");
+    switch (this.matchWinner.name) {
+      case "You":
+        console.log("CONGRATULATIONS! You have won this match.");
+        break;
+      case "Computer":
+        console.log("Sorry, the computer has won this match.");
+    }
+    console.log("=========================================\n");
+  },
+
+  displayGoodbyeMessage() {
+    console.log(`\nThank you for playing ${Help.joinOr(weaponNames, ", ", "")}. Goodbye!`);
+  },
+
   setRoundWinner() {
     if (this.human.choice === this.computer.choice) {
       this.roundWinner = null;
+
     } else if (WEAPONS[this.human.choice].beats
                                          .includes(this.computer.choice)) {
       this.roundWinner = this.human;
+
     } else {
       this.roundWinner = this.computer;
     }
   },
 
   setMatchWinner() {
-    if (this.human.score === WINNING_SCORE) {
-      this.matchWinner = this.human;
-    } else {
-      this.matchWinner = this.computer;
-    }
+    this.matchWinner = this.human.score === WINNING_SCORE ?
+                       this.human : this.computer;
   },
 
   resetMatch() {
@@ -291,7 +257,6 @@ const RPSGame = {
   },
 
   playAgain() {
-    console.log();
     console.log("Play again (y/n)?");
     return Help.getValidAnswer(["y", "n"]) === "y";
   },
@@ -299,37 +264,34 @@ const RPSGame = {
 // eslint-disable-next-line max-lines-per-function, max-statements
   play() {
     while (true) {
-      Display.welcomeMessage();
+      this.displayWelcomeMessage();
+      this.displayScores();
 
       while (this.human.score < WINNING_SCORE &&
              this.computer.score < WINNING_SCORE) {
 
-        Display.scores(this);
-
-        this.human.choose(this);
+        this.human.choose();
         this.computer.choose(this);
-        Display.choices(this);
-
         this.setRoundWinner();
-        Display.roundWinner(this);
+
+        this.history.updateRound(this);
+        this.history.display();
 
         if (this.roundWinner) this.roundWinner.incrementScore();
-        this.history.update(this.human.choice,
-                            this.computer.choice,
-                            this.roundWinner);
+        this.displayScores();
       }
 
-      Display.scores(this);
+      this.history.updateMatch();
 
       this.setMatchWinner();
-      Display.matchWinner(this.matchWinner);
+      this.displayMatchWinner();
 
       this.resetMatch();
 
       if (!this.playAgain()) break;
     }
 
-    Display.goodbyeMessage();
+    this.displayGoodbyeMessage();
   },
 };
 
