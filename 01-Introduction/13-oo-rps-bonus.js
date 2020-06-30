@@ -163,18 +163,22 @@ const Create = {
         this.rounds.push(0);
       },
 
-// eslint-disable-next-line max-lines-per-function, max-statements
+      printRow(index) {
+        console.log(`${WEAPONS[this.humanChoices[index]].name.padEnd(8)} | ` +
+                    `${WEAPONS[this.computerChoices[index]].name.padEnd(8)} | ` +
+                    `${this.winners[index]}`);
+      },
+
       display() {
         let counter = 0;
+
         console.clear();
         console.log("\nMatch 1");
         console.log("YOU      | COMPUTER | WINNER");
         console.log("---------+----------+---------");
         for (let match = 0; match < this.rounds.length - 1; match += 1) {
           for (let round = 0; round < this.rounds[match]; round += 1) {
-            console.log(`${WEAPONS[this.humanChoices[counter]].name.padEnd(8)} | ` +
-            `${WEAPONS[this.computerChoices[counter]].name.padEnd(8)} | ` +
-            `${this.winners[counter]}`);
+            this.printRow(counter);
             counter += 1;
           }
 
@@ -183,9 +187,7 @@ const Create = {
         }
 
         for (let round = 0; round < this.rounds[this.rounds.length - 1]; round += 1) {
-          console.log(`${WEAPONS[this.humanChoices[counter]].name.padEnd(8)} | ` +
-                      `${WEAPONS[this.computerChoices[counter]].name.padEnd(8)} | ` +
-                      `${this.winners[counter]}`);
+          this.printRow(counter);
           counter += 1;
         }
         console.log();
