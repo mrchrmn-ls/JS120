@@ -63,6 +63,7 @@ class Square {
 // -----------------------------------
 class Board {
   static SIZE = 9;
+  static CENTRE_SQUARE = "5";
   static WINNING_SQUARES = [
     [1, 2, 3], [4, 5, 6], [7, 8, 9], // rows
     [1, 4, 7], [2, 5, 8], [3, 6, 9], // columns
@@ -214,8 +215,8 @@ class Computer extends Player {
   getMove(board) {
     let number = Help.getRnd(board.emptySquaresNumbers());
 
-    if (board.emptySquaresNumbers().includes("5")) {
-      number = "5";
+    if (board.emptySquaresNumbers().includes(Board.CENTRE_SQUARE)) {
+      number = Board.CENTRE_SQUARE;
     }
 
     let blockingMove = board.getPossibleWinningMoveFor(Human.SYMBOL);
