@@ -1,10 +1,11 @@
 const rlsync = require("readline-sync");
 
 
+// -----------------------------------
 class Help {
   static joinOr(arr, delimiter = ", ", word = "or ") {
     if (arr.length === 2) {
-      return `${arr[0]} ${word} ${arr[1]}`;
+      return `${arr[0]} ${word}${arr[1]}`;
     }
 
     let result = "";
@@ -33,6 +34,7 @@ class Help {
 }
 
 
+// -----------------------------------
 class Square {
   static EMPTY = " ";
 
@@ -58,6 +60,7 @@ class Square {
 }
 
 
+// -----------------------------------
 class Board {
   static SIZE = 9;
   static WINNING_SQUARES = [
@@ -166,6 +169,7 @@ class Board {
 }
 
 
+// -----------------------------------
 class Player {
   constructor() {
     this.score = 0;
@@ -175,8 +179,8 @@ class Player {
     this.score = 0;
   }
 
-  incrementScore() {
-    this.score += 1;
+  incrementScore(amount) {
+    this.score += amount;
   }
 }
 
@@ -226,6 +230,7 @@ class Computer extends Player {
 }
 
 
+// -----------------------------------
 class TTTGame {
   static GAMES_TO_WIN = 3;
 
@@ -337,7 +342,7 @@ class TTTGame {
           if (this.board.hasWinner(this.currentPlayer.symbol)) {
             this.displayScoreAndBoard();
             this.displayWinner();
-            this.currentPlayer.incrementScore();
+            this.currentPlayer.incrementScore(1);
             break;
 
           } else if (this.board.isFull()) {
