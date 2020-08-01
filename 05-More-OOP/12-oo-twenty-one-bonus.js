@@ -35,6 +35,45 @@ class Help {
 
 
 //------------------------------------
+class Card {
+  constructor(suit, rank, value) {
+    this.suit = suit;
+    this.rank = rank;
+    this.value = value;
+    this.hidden = false;
+  }
+
+  getSuit() {
+    return this.suit;
+  }
+
+  getRank() {
+    return this.rank;
+  }
+
+  getValue() {
+    return this.value;
+  }
+
+  isAce() {
+    return this.rank === "A";
+  }
+
+  isHidden() {
+    return this.hidden === true;
+  }
+
+  hide() {
+    this.hidden = true;
+  }
+
+  reveal() {
+    this.hidden = false;
+  }
+}
+
+
+//------------------------------------
 class Deck {
   static SUIT_SYMBOLS = {
     Clubs: "\u2663",
@@ -43,7 +82,7 @@ class Deck {
     Diamonds: "\u2666"
   };
 
-  static CARD_VALUES = {
+  static CARD_RANKS = {
     2: "2",
     3: "3",
     4: "4",
@@ -62,8 +101,10 @@ class Deck {
   constructor() {
     this.cards = [];
     for (let suit in Deck.SUIT_SYMBOLS) {
-      for (let value in Deck.CARD_VALUES) {
-        this.cards.push([Deck.SUIT_SYMBOLS[suit], value]);
+      for (let rank in Deck.CARD_RANKS) {
+        this.cards.push(new Card(Deck.SUIT_SYMBOLS[suit],
+                                 rank,
+                                 Number(Deck.CARD_RANKS[rank])));
       }
     }
     this.shuffle();
@@ -96,8 +137,8 @@ class Hand {
     let score = 0;
     let aces = 0;
     this.cards.forEach(card => {
-      score += Number(Deck.CARD_VALUES[card[1]]);
-      aces += (card[1] === "A") ? 1 : 0;
+      score += card.getValue();
+      aces += card.isAce() ? 1 : 0;
     });
 
     while ((score > Game.MAX_HAND_SCORE) && (aces > 0)) {
@@ -109,24 +150,20 @@ class Hand {
   }
 
   // eslint-disable-next-line max-lines-per-function, max-statements
-  display(revealAll = true) {
+  display() {
     let numberOfCards = this.cards.length;
     let self = this;
 
     function displayValueLine() {
       let line = "";
-      let firstCard = true;
 
       self.cards.forEach(card => {
-        let value = card[1];
-
-        if (revealAll || firstCard) {
-          if (value === "10") {
+        if (!card.isHidden()) {
+          if (card.getRank() === "10") {
             line += "   | 1 0 |";
           } else {
-            line += `   |  ${value}  |`;
+            line += `   |  ${card.getRank()}  |`;
           }
-          firstCard = false;
         } else {
           line += "   |     |";
         }
@@ -137,14 +174,10 @@ class Hand {
 
     function displaySuitsLine() {
       let line = "";
-      let firstCard = true;
 
       self.cards.forEach(card => {
-        let symbol = card[0];
-
-        if (revealAll || firstCard) {
-          line += `   |  ${symbol}  |`;
-          firstCard = false;
+        if (!card.isHidden()) {
+          line += `   |  ${card.getSuit()}  |`;
         } else {
           line += "   |     |";
         }
@@ -194,7 +227,6 @@ class Game {
   static MAX_HAND_SCORE = 21;
   static DEALER_MIN_HAND_SCORE = 17;
   static GAMES_TO_WIN = 5;
-  static INITIAL_CARDS_NUMBER = 2;
 
   constructor() {
     this.deck = new Deck();
@@ -202,14 +234,16 @@ class Game {
     this.dealer = new Contestant("Dealer");
   }
 
-  dealFirstCards(number) {
-    for (let count = 0; count < number; count += 1) {
+  dealFirstCards() {
+    for (let count = 0; count < 2; count += 1) {
       this.player.hand.addCard(this.deck.dealCard());
       this.dealer.hand.addCard(this.deck.dealCard());
     }
+    this.dealer.hand.cards[1].hide();
   }
 
-  displayGame(revealAll = true) {
+  // eslint-disable-next-line max-lines-per-function, max-statements
+  displayGame() {
     let self = this;
 
     function displayIntro() {
@@ -218,8 +252,12 @@ class Game {
       console.log(`PLAYER   ${self.player.score} : ${self.dealer.score}   DEALER\n`);
     }
 
-    function displayHandScores(contestant, revealAll) {
-      console.log(`\n${contestant.name}'s card score: ${revealAll ? contestant.hand.getScore() : `at least ${Number(Deck.CARD_VALUES[contestant.hand.cards[0][1]]) + 1}`}`);
+    function displayHandScores(contestant) {
+      if (contestant.hand.cards[1].isHidden()) {
+        console.log(`\n${contestant.name}'s card score: at least ${contestant.hand.cards[0].getValue() + 1}`);
+      } else {
+        console.log(`\n${contestant.name}'s card score: ${contestant.hand.getScore()}`);
+      }
     }
 
     console.clear();
@@ -227,11 +265,11 @@ class Game {
 
     console.log();
     this.player.hand.display();
-    displayHandScores(this.player, true);
+    displayHandScores(this.player);
     console.log("\n");
 
-    this.dealer.hand.display(revealAll);
-    displayHandScores(this.dealer, revealAll);
+    this.dealer.hand.display();
+    displayHandScores(this.dealer);
     console.log();
   }
 
@@ -316,7 +354,7 @@ class Game {
         case "next round":
           rlsync.question("Press enter to start the next round.");
           break;
-        case "reveal card":
+        case "reveal next card":
           rlsync.question("Press enter to reveal dealer's next card.");
           break;
       }
@@ -332,14 +370,14 @@ class Game {
 
       while (true) { // game loop
 
-        this.dealFirstCards(Game.INITIAL_CARDS_NUMBER);
+        this.dealFirstCards();
 
-        this.displayGame(false);
+        this.displayGame();
 
         while (this.player.isBust() === false) { // player loop
           if (hitMe()) {
             this.player.hand.addCard(this.deck.dealCard());
-            this.displayGame(false);
+            this.displayGame();
             continue;
           }
 
@@ -356,10 +394,11 @@ class Game {
           continue;
         }
 
+        this.dealer.hand.cards[1].reveal();
         this.displayGame();
 
         while (this.dealer.hand.getScore() < Game.DEALER_MIN_HAND_SCORE) { // dealer loop
-          waitForEnter("reveal card");
+          waitForEnter("reveal next card");
           this.dealer.hand.addCard(this.deck.dealCard());
           this.displayGame();
         }
