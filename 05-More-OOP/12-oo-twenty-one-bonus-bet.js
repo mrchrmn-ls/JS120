@@ -339,7 +339,6 @@ class Game {
         break;
       case this.dealer:
         console.log("The house has won this round.\n");
-        break;
     }
   }
 
@@ -373,8 +372,6 @@ class Game {
         } else {
           console.log("SORRY!\nThe house has one this round,\nand now you're broke!\n");
         }
-        break;
-        break;
     }
   }
 
@@ -400,7 +397,6 @@ class Game {
           break;
         case "reveal next card":
           rlsync.question("Press enter to reveal dealer's next card.");
-          break;
       }
     }
 
