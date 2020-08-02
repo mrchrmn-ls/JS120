@@ -118,7 +118,12 @@ class Deck {
   }
 
   dealCard() {
-    return this.cards.pop();
+    if (this.cards.length > 0) {
+      return this.cards.pop();
+    } else {
+      this.constructor();
+      return this.cards.pop();
+    }
   }
 }
 
