@@ -408,14 +408,14 @@ class Game {
         if (this.dealer.isBust()) {
           console.log("CONGRATULATIONS!\nThe dealer bust, you have won this round,\nand now you're rich!\n");
         } else {
-          console.log("CONGRATULATIONS!\nYou've one this round\nand now you're rich!\n");
+          console.log("CONGRATULATIONS!\nYou've won this round,\nand now you're rich!\n");
         }
         break;
       case "broke":
         if (this.player.isBust()) {
           console.log("SORRY!\nYou bust, the house has won this round,\nand now you're broke!\n");
         } else {
-          console.log("SORRY!\nThe house has one this round,\nand now you're broke!\n");
+          console.log("SORRY!\nThe house has won this round,\nand now you're broke!\n");
         }
     }
   }
