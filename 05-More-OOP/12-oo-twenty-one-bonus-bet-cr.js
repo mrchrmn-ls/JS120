@@ -111,10 +111,12 @@ class Deck {
   }
 
   shuffle() {
-    for (let index1 = this.cards.length - 1; index1 > 0; index1 -= 1) {
-      let index2 = Math.floor((index1 + 1) * Math.random());
-      [this.cards[index1], this.cards[index2]] =
-        [this.cards[index2], this.cards[index1]];
+    for (let card1index = this.cards.length - 1;
+        card1index > 0; card1index -= 1) {
+
+      let card2index = Math.floor((card1index + 1) * Math.random());
+      [this.cards[card1index], this.cards[card2index]] =
+        [this.cards[card2index], this.cards[card1index]];
     }
   }
 
@@ -314,6 +316,45 @@ class Game {
 
   }
 
+  enterForNextRound() {
+    rlsync.question("Press enter to start the next round.");
+  }
+
+  enterForDealerCard() {
+    rlsync.question("Press enter to reveal dealer's next card.");
+  }
+
+  playerTurn() {
+    function hitMe() {
+      console.log("Hit or stay? (h/s)");
+      let input = Help.getValidAnswer(["h", "s"]);
+      return input === "h";
+    }
+
+    this.displayGame();
+
+    while (this.player.isBust() === false) { // player loop
+      if (hitMe()) {
+        this.player.hand.addCard(this.deck.dealCard());
+        this.displayGame();
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  dealerTurn() {
+    this.dealer.hand.cards[1].reveal();
+    this.displayGame();
+
+    while (this.dealer.hand.getScore() < Game.DEALER_MIN_HAND_SCORE) { // dealer loop
+      this.enterForDealerCard();
+      this.dealer.hand.addCard(this.deck.dealCard());
+      this.displayGame();
+    }
+  }
+
   declareBust(contestant) {
     switch (contestant) {
       case this.player:
@@ -388,21 +429,6 @@ class Game {
 
   // eslint-disable-next-line max-lines-per-function, max-statements
   play() {
-    function hitMe() {
-      console.log("Hit or stay? (h/s)");
-      let input = Help.getValidAnswer(["h", "s"]);
-      return input === "h";
-    }
-
-    function waitForEnter(reason) {
-      switch (reason) {
-        case "next round":
-          rlsync.question("Press enter to start the next round.");
-          break;
-        case "reveal next card":
-          rlsync.question("Press enter to reveal dealer's next card.");
-      }
-    }
 
     function playAgain() {
       console.log("Do you want to play again? (y/n)");
@@ -410,50 +436,35 @@ class Game {
       return input === "y";
     }
 
-    while (true) { // match loop
+    while (true) {
 
-      while (true) { // round loop
+      while (true) {
 
         this.dealFirstCards();
 
-        this.displayGame();
-
-        while (this.player.isBust() === false) { // player loop
-          if (hitMe()) {
-            this.player.hand.addCard(this.deck.dealCard());
-            this.displayGame();
-            continue;
-          }
-
-          break;
-        }
+        this.playerTurn();
 
         if (this.player.isBust()) {
           this.declareBust(this.player);
           this.player.deductMoney();
+
           if (this.isGameOver()) break;
 
           this.resetRound();
-          waitForEnter("next round");
+          this.enterForNextRound();
           continue;
         }
 
-        this.dealer.hand.cards[1].reveal();
-        this.displayGame();
-
-        while (this.dealer.hand.getScore() < Game.DEALER_MIN_HAND_SCORE) { // dealer loop
-          waitForEnter("reveal next card");
-          this.dealer.hand.addCard(this.deck.dealCard());
-          this.displayGame();
-        }
+        this.dealerTurn();
 
         if (this.dealer.isBust()) {
           this.declareBust(this.dealer);
           this.player.addMoney();
+
           if (this.isGameOver()) break;
 
           this.resetRound();
-          waitForEnter("next round");
+          this.enterForNextRound();
           continue;
         }
 
@@ -468,11 +479,11 @@ class Game {
         if (this.isGameOver()) break;
 
         this.resetRound();
-        waitForEnter("next round");
+        this.enterForNextRound();
       }
 
       this.displayGame();
-      this.displayEndResult(result.getEndResult());
+      this.displayEndResult(this.getEndResult());
 
       if (playAgain()) {
         this.resetMatch();
