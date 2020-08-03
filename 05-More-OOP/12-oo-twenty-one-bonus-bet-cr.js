@@ -284,7 +284,7 @@ class Game {
   }
 
   // eslint-disable-next-line max-lines-per-function, max-statements
-  displayGame() {
+  displayGame(clear = true) {
     let self = this;
 
     function displayIntro() {
@@ -302,7 +302,8 @@ class Game {
       }
     }
 
-    console.clear();
+    if (clear === true) console.clear();
+
     displayIntro();
 
     console.log();
@@ -313,7 +314,6 @@ class Game {
     this.dealer.hand.display();
     displayHandScores(this.dealer);
     console.log();
-
   }
 
   enterForNextRound() {
@@ -355,21 +355,23 @@ class Game {
     }
   }
 
-  declareBust(contestant) {
-    switch (contestant) {
-      case this.player:
-        console.log("You bust! The house has won this round.\n");
-        break;
-      case this.dealer:
-        console.log("Dealer busts! You have won this round.\n");
-    }
-  }
-
   getRoundWinner() {
+    if (this.player.isBust()) return this.dealer;
+
+    if (this.dealer.isBust()) return this.player;
+
     if (this.player.hand.getScore() === this.dealer.hand.getScore()) return "push";
 
     return this.player.hand.getScore() > this.dealer.hand.getScore() ?
            this.player : this.dealer;
+  }
+
+  exchangeMoney() {
+    if (this.getRoundWinner() === this.player) {
+      this.player.addMoney();
+    } else if (this.getRoundWinner() === this.dealer) {
+      this.player.deductMoney();
+    }
   }
 
   declareRoundWinner(winner) {
@@ -380,9 +382,11 @@ class Game {
 
     switch (winner) {
       case this.player:
+        if (this.dealer.isBust()) console.log("Dealer busts!");
         console.log("You have won this round.\n");
         break;
       case this.dealer:
+        if (this.player.isBust()) console.log("You bust!");
         console.log("The house has won this round.\n");
     }
   }
@@ -405,18 +409,10 @@ class Game {
   displayEndResult(result) {
     switch (result) {
       case "rich":
-        if (this.dealer.isBust()) {
-          console.log("CONGRATULATIONS!\nThe dealer bust, you have won this round,\nand now you're rich!\n");
-        } else {
-          console.log("CONGRATULATIONS!\nYou've won this round,\nand now you're rich!\n");
-        }
+        console.log("CONGRATULATIONS!\nYou're rich!\n");
         break;
       case "broke":
-        if (this.player.isBust()) {
-          console.log("SORRY!\nYou bust, the house has won this round,\nand now you're broke!\n");
-        } else {
-          console.log("SORRY!\nThe house has won this round,\nand now you're broke!\n");
-        }
+        console.log("SORRY!\nYou're broke!\n");
     }
   }
 
@@ -444,37 +440,10 @@ class Game {
 
         this.playerTurn();
 
-        if (this.player.isBust()) {
-          this.declareBust(this.player);
-          this.player.deductMoney();
-
-          if (this.isGameOver()) break;
-
-          this.resetRound();
-          this.enterForNextRound();
-          continue;
-        }
-
-        this.dealerTurn();
-
-        if (this.dealer.isBust()) {
-          this.declareBust(this.dealer);
-          this.player.addMoney();
-
-          if (this.isGameOver()) break;
-
-          this.resetRound();
-          this.enterForNextRound();
-          continue;
-        }
-
-        if (this.getRoundWinner() === this.player) {
-          this.player.addMoney();
-        } else if (this.getRoundWinner() === this.dealer) {
-          this.player.deductMoney();
-        }
+        if (!this.player.isBust()) this.dealerTurn();
 
         this.declareRoundWinner(this.getRoundWinner());
+        this.exchangeMoney();
 
         if (this.isGameOver()) break;
 
@@ -483,6 +452,8 @@ class Game {
       }
 
       this.displayGame();
+
+      this.declareRoundWinner(this.getRoundWinner());
       this.displayEndResult(this.getEndResult());
 
       if (playAgain()) {
